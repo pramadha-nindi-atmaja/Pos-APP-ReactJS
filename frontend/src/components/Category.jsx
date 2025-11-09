@@ -1,91 +1,95 @@
-import { Col, ListGroup } from "react-bootstrap";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  categorySelectors,
-  getAllCategory,
-} from "../features/CategorySlice.js";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Col, ListGroup, Spinner } from "react-bootstrap";
 import { IoFastFoodSharp } from "react-icons/io5";
 import { FaUtensils } from "react-icons/fa";
 import { CiCoffeeCup } from "react-icons/ci";
 import { TbBrandCakephp } from "react-icons/tb";
+import {
+  categorySelectors,
+  getAllCategory,
+} from "../features/CategorySlice.js";
 import { getProduct, getProductByCategory } from "../features/ProductSlice.js";
 
 const Category = () => {
   const dispatch = useDispatch();
-  const category = useSelector(categorySelectors.selectAll);
+  const categories = useSelector(categorySelectors.selectAll);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dispatch(getAllCategory());
+    const fetchCategories = async () => {
+      try {
+        await dispatch(getAllCategory());
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
   }, [dispatch]);
 
-  useEffect(() => {
-    dispatch(getAllCategory()).finally(() => setLoading(false));
-  }, [dispatch]);
-
-  function setActive(elem) {
-    var a = document.getElementsByClassName("active");
-    for (let i = 0; i < a.length; i++) {
-      a[i].classList.remove("active");
-    }
+  const setActive = (elem) => {
+    document.querySelectorAll(".active").forEach((item) => {
+      item.classList.remove("active");
+    });
     elem.classList.add("active");
-  }
+  };
 
-  const setIcon = (categori) => {
-    if (categori == 1) {
-      return <FaUtensils />;
-    } else if (categori == 2) {
-      return <CiCoffeeCup />;
-    } else {
-      return <TbBrandCakephp />;
+  const getIcon = (categoryId) => {
+    switch (categoryId) {
+      case 1:
+        return <FaUtensils />;
+      case 2:
+        return <CiCoffeeCup />;
+      default:
+        return <TbBrandCakephp />;
     }
   };
 
-  const showAll = () => {
+  const handleShowAll = (elem) => {
+    setActive(elem);
     dispatch(getProduct());
   };
 
-  const categoryClicked = (id) => {
+  const handleCategoryClick = (id, elem) => {
+    setActive(elem);
     dispatch(getProductByCategory(id));
   };
+
   return (
-    <>
-      <Col md={2}>
-        <h4>Product Kategori</h4>
-        <p>{loading ? "Loading..." : ""}</p>
-        <hr />
-        <ListGroup key="all001">
+    <Col md={2}>
+      <h4>Product Category</h4>
+      {loading && (
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <Spinner animation="border" size="sm" />
+          <span>Loading categories...</span>
+        </div>
+      )}
+      <hr />
+
+      <ListGroup>
+        <ListGroup.Item
+          id="cat-all"
+          className="mb-1 shadow-sm"
+          active
+          action
+          onClick={(e) => handleShowAll(e.currentTarget)}
+        >
+          <IoFastFoodSharp /> All Products
+        </ListGroup.Item>
+
+        {categories.map((item) => (
           <ListGroup.Item
-            id={`all001`}
+            key={item.id}
+            id={`cat-${item.id}`}
             className="mb-1 shadow-sm"
-            active
             action
-            onClick={() => {
-              setActive(document.getElementById(`all001`)), showAll();
-            }}
+            onClick={(e) => handleCategoryClick(item.id, e.currentTarget)}
           >
-            <IoFastFoodSharp /> All Product
+            {getIcon(item.id)} {item.name}
           </ListGroup.Item>
-        </ListGroup>
-        {category &&
-          category.map((item) => (
-            <ListGroup key={item.id}>
-              <ListGroup.Item
-                id={`key${item.id}`}
-                className="mb-1 shadow-sm"
-                action
-                onClick={() => {
-                  setActive(document.getElementById(`key${item.id}`)),
-                    categoryClicked(item.id);
-                }}
-              >
-                {setIcon(item.id)} {item.name}
-              </ListGroup.Item>
-            </ListGroup>
-          ))}
-      </Col>
-    </>
+        ))}
+      </ListGroup>
+    </Col>
   );
 };
 
